@@ -1,149 +1,131 @@
-#models/ReviewSentimentAnalysis.py
-# Import necessary libraries
 import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
-import seaborn as sns
 from sklearn.model_selection import train_test_split
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
-from sklearn.naive_bayes import MultinomialNB
 from sklearn.metrics import classification_report, confusion_matrix
-from tensorflow.keras.models import Sequential, load_model
-from tensorflow.keras.layers import Embedding, LSTM, Dense, Dropout
+from tensorflow.keras.models import Sequential, Model
+from tensorflow.keras.layers import Embedding, LSTM, Dense, Dropout, Input, Concatenate
 from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint
 from tensorflow.keras.preprocessing.text import Tokenizer
 from tensorflow.keras.preprocessing.sequence import pad_sequences
-from nltk.corpus import stopwords
-from nltk.tokenize import RegexpTokenizer
-from nltk.stem import PorterStemmer
+from sklearn.naive_bayes import MultinomialNB
+from sklearn.preprocessing import MinMaxScaler
 import nltk
+import pickle
 import os
-import warnings
 
-# Disable TensorFlow logs and warnings
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+# Disable warnings and download stopwords
+import warnings
+nltk.download('stopwords')
 warnings.filterwarnings('ignore')
 
-# Download NLTK data
-nltk.download('stopwords')
+# Preprocessing setup
+from nltk.corpus import stopwords
+from nltk.stem import PorterStemmer
+
 stop_words = set(stopwords.words('english'))
 stemmer = PorterStemmer()
-tokenizer = RegexpTokenizer(r'\w+')
 
 # Load dataset
-df = pd.read_csv('./data/Reviews.csv')
+data_path = './data/Reviews.csv'
+data = pd.read_csv(data_path)
+data = data.sample(n=50000, random_state=42)  # Reduce size for faster processing
+data['Text'] = data['Text'].fillna('')
+data['Score'] = data['Score'].apply(lambda x: 1 if x >= 3 else 0)  # Binary classification
 
-# Reduce dataset size for faster processing
-df = df.sample(n=50000, random_state=42)
+# Normalize helpfulness
+scaler = MinMaxScaler()
+data['HelpfulnessNumerator_scaled'] = scaler.fit_transform(data[['HelpfulnessNumerator']].fillna(0))
+data['HelpfulnessDenominator_scaled'] = scaler.fit_transform(data[['HelpfulnessDenominator']].fillna(0))
 
-# Drop unnecessary columns and preprocess labels
-df = df[['Score', 'Text']].drop_duplicates()
-df['Text'] = df['Text'].fillna('')
-df['Score'] = df['Score'].apply(lambda x: 1 if x >= 3 else 0)
-
-# Optimized text preprocessing
+# Preprocessing function
 def clean_text(series):
     return series.str.lower().str.replace(r'[^\w\s]', '', regex=True).str.split().apply(
         lambda x: ' '.join([stemmer.stem(word) for word in x if word not in stop_words])
     )
 
-df['cleaned_text'] = clean_text(df['Text'])
+data['cleaned_text'] = clean_text(data['Text'])
 
-# Split data
-X = df['cleaned_text']
-y = df['Score']
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+# Train-test split
+X = data[['cleaned_text', 'HelpfulnessNumerator_scaled', 'HelpfulnessDenominator_scaled']]
+y = data['Score']
 
-# TF-IDF Vectorization
-tfidf = TfidfVectorizer(max_features=20000, ngram_range=(1, 2), stop_words='english')
-X_train_tfidf = tfidf.fit_transform(X_train)
-X_test_tfidf = tfidf.transform(X_test)
+# TF-IDF vectorization for Logistic Regression
+tfidf = TfidfVectorizer(max_features=20000, stop_words='english')
+X_tfidf = tfidf.fit_transform(X['cleaned_text'])
+X_train_tfidf, X_test_tfidf, y_train, y_test = train_test_split(X_tfidf, y, test_size=0.2, random_state=42)
 
 # Logistic Regression Model
-log_model = LogisticRegression(max_iter=300, solver='saga', n_jobs=-1)
+log_model = LogisticRegression(max_iter=300)
 log_model.fit(X_train_tfidf, y_train)
 
-# Naive Bayes Model
-nb_model = MultinomialNB()
-nb_model.fit(X_train_tfidf, y_train)
+# Evaluate Logistic Regression
+print("Logistic Regression Performance:")
+y_pred = log_model.predict(X_test_tfidf)
+print("Classification Report:\n", classification_report(y_test, y_pred))
+print("Confusion Matrix:\n", confusion_matrix(y_test, y_pred))
 
-# Tokenization for LSTM
+# Tokenize and pad sequences for MLP
 tokenizer = Tokenizer(num_words=20000)
-tokenizer.fit_on_texts(X)
-X_seq = tokenizer.texts_to_sequences(X)
-
-# Padding sequences
-max_len = 150
-X_padded = pad_sequences(X_seq, maxlen=max_len)
-
-# Split padded data
+tokenizer.fit_on_texts(X['cleaned_text'])
+X_seq = tokenizer.texts_to_sequences(X['cleaned_text'])
+X_padded = pad_sequences(X_seq, maxlen=150)
 X_train_padded, X_test_padded, y_train, y_test = train_test_split(X_padded, y, test_size=0.2, random_state=42)
 
-# Define LSTM model
-model = Sequential([
-    Embedding(input_dim=20000, output_dim=128, input_length=max_len),
-    LSTM(64, dropout=0.2, recurrent_dropout=0.2),
-    Dropout(0.3),
-    Dense(1, activation='sigmoid')
-])
+# Additional features for MLP
+# Train-test split for text and helpfulness features
+X_text = X['cleaned_text']
+X_helpfulness = X[['HelpfulnessNumerator_scaled', 'HelpfulnessDenominator_scaled']]
 
-model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
+X_text_train, X_text_test, X_help_train, X_help_test, y_train, y_test = train_test_split(
+    X_text, X_helpfulness, y, test_size=0.2, random_state=42
+)
 
-# Early stopping
+# Tokenize and pad sequences for text data
+X_train_padded = pad_sequences(tokenizer.texts_to_sequences(X_text_train), maxlen=150)
+X_test_padded = pad_sequences(tokenizer.texts_to_sequences(X_text_test), maxlen=150)
+
+# Convert helpfulness data to NumPy arrays
+X_train_helpfulness = X_help_train.values
+X_test_helpfulness = X_help_test.values
+
+# Define MLP Model
+input_text = Input(shape=(150,), name="text_input")
+input_helpfulness = Input(shape=(2,), name="helpfulness_input")
+
+embedding_layer = Embedding(input_dim=20000, output_dim=128, input_length=150)(input_text)
+lstm_out = LSTM(64, dropout=0.2)(embedding_layer)
+concat_layer = Concatenate()([lstm_out, input_helpfulness])
+dropout_layer = Dropout(0.3)(concat_layer)
+output_layer = Dense(1, activation='sigmoid')(dropout_layer)
+
+mlp_model = Model(inputs=[input_text, input_helpfulness], outputs=output_layer)
+mlp_model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
+
+# Train MLP Model
 early_stopping = EarlyStopping(monitor='val_loss', patience=3)
-model_checkpoint = ModelCheckpoint('best_model.keras', save_best_only=True, monitor='val_loss', mode='min')
+model_checkpoint = ModelCheckpoint('models/mlp_model.keras', save_best_only=True, monitor='val_loss')
 
-# Train model
-history = model.fit(
-    X_train_padded, y_train,
-    validation_data=(X_test_padded, y_test),
+history = mlp_model.fit(
+    [X_train_padded, X_train_helpfulness], y_train,
+    validation_data=([X_test_padded, X_test_helpfulness], y_test),
     epochs=3,
     batch_size=64,
     callbacks=[early_stopping, model_checkpoint]
 )
 
-# Save the tokenizer for later use
-import pickle
-with open('../tokenizer.pkl', 'wb') as file:
-    pickle.dump(tokenizer, file)
+# Save models and artifacts
+if not os.path.exists('models'):
+    os.makedirs('models')
 
-# Save the TF-IDF vectorizer
-with open('../tfidf_vectorizer.pkl', 'wb') as file:
+with open('models/tfidf_vectorizer.pkl', 'wb') as file:
     pickle.dump(tfidf, file)
 
-# Evaluate Logistic Regression and Naive Bayes
-print("Logistic Regression Test Accuracy:", log_model.score(X_test_tfidf, y_test))
-print("Naive Bayes Test Accuracy:", nb_model.score(X_test_tfidf, y_test))
+with open('models/tokenizer.pkl', 'wb') as file:
+    pickle.dump(tokenizer, file)
 
-# Evaluate LSTM
-loss, accuracy = model.evaluate(X_test_padded, y_test)
-print(f"LSTM Test Accuracy: {accuracy * 100:.2f}%")
+with open('models/logistic_model.pkl', 'wb') as file:
+    pickle.dump(log_model, file)
 
-# Predict sentiment for a custom review
-def predict_sentiment(review):
-    print("\n--- Sentiment Analysis ---")
-    print(f"Review: {review}")
-
-    # Logistic Regression Prediction
-    log_tfidf = tfidf.transform([review])
-    log_pred = log_model.predict(log_tfidf)[0]
-    print(f"Logistic Regression Prediction: {'Positive' if log_pred == 1 else 'Negative'}")
-
-    # Naive Bayes Prediction
-    nb_pred = nb_model.predict(log_tfidf)[0]
-    print(f"Naive Bayes Prediction: {'Positive' if nb_pred == 1 else 'Negative'}")
-
-    # LSTM Prediction
-    seq = tokenizer.texts_to_sequences([review])
-    padded_seq = pad_sequences(seq, maxlen=max_len)
-    lstm_pred = model.predict(padded_seq)[0][0]
-    print(f"LSTM Prediction: {'Positive' if lstm_pred > 0.5 else 'Negative'}")
-
-# Recursive Input for Custom Reviews
-while True:
-    custom_review = input("\nEnter a custom review (type 'exit' to quit): ")
-    if custom_review.lower() == 'exit':
-        print("Exiting the program. Goodbye!")
-        break
-    predict_sentiment(custom_review)
+print("Training completed. Models saved successfully!")

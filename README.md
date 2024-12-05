@@ -1,29 +1,24 @@
-
 # Amazon Review Sentiment Analysis
 
-## Project Overview
-This project analyzes Amazon reviews to predict sentiment (positive or negative) using machine learning models. It provides insights into customer reviews to help businesses improve products and marketing strategies. The project is built using Logistic Regression (as the baseline model) and Multi-Layer Perceptrons (MLP) for improved performance.
+## **Project Overview**
+This project analyzes Amazon reviews to predict sentiment (**Positive** or **Negative**) using machine learning models. The application provides insights into customer reviews, helping businesses improve their products and marketing strategies. The project includes:
 
-The application includes:
-- A Flask backend to serve predictions.
-- A user-friendly HTML frontend to interact with the model.
-- Pre-trained models for text sentiment analysis.
+- A Flask backend for serving predictions.
+- A user-friendly HTML frontend for interaction.
+- Pre-trained machine learning models for sentiment analysis.
 
----
-
-## Features
+### **Features**
 1. **Text Sentiment Prediction**:
-   - Enter a review into a text box to predict whether the sentiment is positive or negative.
+   - Enter a review in the text box to predict whether the sentiment is **Positive** or **Negative**.
 2. **Pre-Trained Models**:
    - Logistic Regression (baseline model).
-   - Multi-Layer Perceptron (MLP) for enhanced performance.
+   - Multi-Layer Perceptron (MLP with LSTM) for enhanced performance.
 3. **Web Interface**:
-   - A simple, browser-based interface using Flask and HTML templates.
+   - A simple, browser-based interface using Flask and Bootstrap HTML templates.
 
 ---
 
-## Directory Structure
-
+## **Directory Structure**
 ```
 ProjectSentimentAnalysis/
 ├── app/
@@ -35,34 +30,35 @@ ProjectSentimentAnalysis/
 ├── models/
 │   ├── logistic_model.pkl         # Trained Logistic Regression model
 │   ├── tfidf_vectorizer.pkl       # TF-IDF vectorizer for preprocessing
-│   ├── mlp_model.h5               # Trained MLP (LSTM) model
+│   ├── mlp_model.keras            # Trained MLP (LSTM) model
 │   ├── tokenizer.pkl              # Tokenizer for LSTM model
 ├── train_models/
-│   ├── train_logistic.py          # Script to train Logistic Regression model
-│   ├── train_mlp.py               # Script to train MLP (LSTM) model
+│   ├── ReviewSentimentAnalysis.py # Unified script for training models
 ├── requirements.txt               # Required Python packages
 ```
 
 ---
 
-## Prerequisites
+## **Prerequisites**
 1. Python 3.8 or higher.
-2. [Pip](https://pip.pypa.io/en/stable/) for managing Python packages.
+2. Pip for managing Python packages.
 
 ---
 
-## Installation
+## **Installation**
 
 ### Step 1: Clone the Repository
 ```bash
+# Clone the repository
 git clone <repository_url>
 cd ProjectSentimentAnalysis
 ```
 
 ### Step 2: Set Up a Virtual Environment
 ```bash
-python -m venv venv
-source venv/bin/activate  # On Windows, use: venv\Scripts\activate
+# Create and activate the virtual environment
+conda create -n ml_course python=3.10
+conda activate ml_course
 ```
 
 ### Step 3: Install Required Libraries
@@ -73,60 +69,63 @@ pip install -r requirements.txt
 
 ---
 
-## Dataset
-The dataset (`Reviews.csv`) should be placed in the `data/` directory. It includes the following fields:
+## **Dataset**
+The dataset (`Reviews.csv`) is located in the `data/` directory. It includes:
 - **Id**: Unique ID for each review.
 - **Text**: Review content (used for analysis).
 - **Score**: Rating (used to determine sentiment: positive if ≥3, negative otherwise).
+- **HelpfulnessNumerator** and **HelpfulnessDenominator**: Indicate the helpfulness of a review.
 
 ---
 
-## Training Models
+## **Training Models**
 
 ### Logistic Regression
-Train and save the Logistic Regression model:
+Logistic Regression uses **TF-IDF** vectorized features for sentiment classification.
 ```bash
-python train_models/train_logistic.py
+# Train and save the Logistic Regression model
+python train_models/ReviewSentimentAnalysis.py
 ```
 This generates:
 - `logistic_model.pkl` (model)
 - `tfidf_vectorizer.pkl` (vectorizer)
 
-### Multi-Layer Perceptron (MLP)
-Train and save the MLP model:
+### Multi-Layer Perceptron (MLP with LSTM)
+The MLP model uses tokenized and padded sequences for classification and incorporates additional features like **HelpfulnessNumerator** and **HelpfulnessDenominator**.
 ```bash
-python train_models/train_mlp.py
+# Train and save the MLP model
+python train_models/ReviewSentimentAnalysis.py
 ```
 This generates:
-- `mlp_model.h5` (model)
+- `mlp_model.keras` (model)
 - `tokenizer.pkl` (tokenizer)
 
 ---
 
-## Running the Application
+## **Running the Application**
 
 ### Step 1: Start the Flask App
 Launch the Flask backend:
 ```bash
 python app/app.py
 ```
-
 The application will be available at: `http://127.0.0.1:5000`.
 
 ### Step 2: Interact with the Frontend
 1. Open your browser and navigate to `http://127.0.0.1:5000`.
-2. Enter a review in the text box and click "Predict" to see the sentiment analysis results.
+2. Enter a review in the text box and click **"Predict Sentiment"**.
+3. View the sentiment analysis results.
 
 ---
 
-## Example Usage
+## **Example Usage**
 
-### Input
+### **Input**
 ```plaintext
 "I love this product! It works perfectly and is great value for money."
 ```
 
-### Output
+### **Output**
 ```json
 {
     "Logistic Regression Sentiment": "Positive",
@@ -136,39 +135,70 @@ The application will be available at: `http://127.0.0.1:5000`.
 
 ---
 
-## Models
-1. **Baseline Model (Logistic Regression)**:
-   - Simpler and interpretable.
-   - Provides a benchmark for comparing other models.
-2. **Advanced Model (MLP with LSTM)**:
-   - Captures more complex relationships in text data.
-   - Improved accuracy for sentiment prediction.
+## **Models**
+
+### **Baseline Model (Logistic Regression):**
+- Simpler and interpretable.
+- Uses TF-IDF vectorized features.
+
+### **Advanced Model (MLP with LSTM):**
+- Captures more complex relationships in text data.
+- Incorporates additional features like review helpfulness scores.
+- Improved accuracy for sentiment prediction.
 
 ---
 
-## Troubleshooting
+## **How Sentiment is Defined**
+
+### Logistic Regression
+- Outputs a probability for the positive class.
+- Threshold: If probability ≥0.5, classify as **Positive**; otherwise, classify as **Negative**.
+
+### MLP (Multi-Layer Perceptron)
+- Processes tokenized text and additional numerical features.
+- Outputs a probability for the positive class.
+- Threshold: If probability ≥0.5, classify as **Positive**; otherwise, classify as **Negative**.
+
+---
+
+## **Troubleshooting**
 
 ### Common Issues
 1. **ModuleNotFoundError**:
-   - Ensure all required libraries are installed via `pip install -r requirements.txt`.
+   - Ensure all required libraries are installed via:
+     ```bash
+     pip install -r requirements.txt
+     ```
+
 2. **Flask App Not Running**:
-   - Verify Python version (3.8 or higher) and check if the Flask app is correctly launched.
+   - Verify Python version (3.8 or higher) and ensure the Flask app is launched in the correct directory.
+
 3. **Dataset Issues**:
    - Ensure the `Reviews.csv` file is correctly placed in the `data/` directory.
 
+4. **Model Discrepancies**:
+   - Logistic Regression and MLP may give different results due to differences in feature extraction and model complexity.
+
 ---
 
-## Contribution
+## **Contribution**
 1. Fork the repository.
-2. Create a new branch: `git checkout -b feature-name`.
-3. Commit changes: `git commit -m 'Add feature'`.
-4. Push to branch: `git push origin feature-name`.
+2. Create a new branch:
+   ```bash
+   git checkout -b feature-name
+   ```
+3. Commit changes:
+   ```bash
+   git commit -m 'Add feature'
+   ```
+4. Push to branch:
+   ```bash
+   git push origin feature-name
+   ```
 5. Submit a pull request.
 
 ---
 
-## Authors
-- **Pooja Shiwakoti**
-- **Kamal Ghimire**
+## **Authors**
+Your Name -
 
----
