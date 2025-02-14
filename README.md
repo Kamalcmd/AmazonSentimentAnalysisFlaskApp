@@ -50,8 +50,8 @@ ProjectSentimentAnalysis/
 ### Step 1: Clone the Repository
 ```bash
 # Clone the repository
-git clone <repository_url>
-cd ProjectSentimentAnalysis
+#git clone git@github.com:Kamalcmd/AmazonSentimentAnalysisFlaskApp.git
+#cd ProjectSentimentAnalysisFlaskApp
 ```
 
 ### Step 2: Set Up a Virtual Environment
@@ -82,24 +82,21 @@ The dataset (`Reviews.csv`) is located in the `data/` directory. It includes:
 
 ### Logistic Regression
 Logistic Regression uses **TF-IDF** vectorized features for sentiment classification.
-```bash
-# Train and save the Logistic Regression model
-python train_models/ReviewSentimentAnalysis.py
-```
+
 This generates:
 - `logistic_model.pkl` (model)
 - `tfidf_vectorizer.pkl` (vectorizer)
 
 ### Multi-Layer Perceptron (MLP with LSTM)
 The MLP model uses tokenized and padded sequences for classification and incorporates additional features like **HelpfulnessNumerator** and **HelpfulnessDenominator**.
+
+This generates:
+- `mlp_model.keras` (model)
+- `tokenizer.pkl` (tokenizer)
 ```bash
 # Train and save the MLP model
 python train_models/ReviewSentimentAnalysis.py
 ```
-This generates:
-- `mlp_model.keras` (model)
-- `tokenizer.pkl` (tokenizer)
-
 ---
 
 ## **Running the Application**
@@ -131,6 +128,16 @@ The application will be available at: `http://127.0.0.1:5000`.
     "Logistic Regression Sentiment": "Positive",
     "MLP Sentiment": "Positive"
 }
+```
+### **Some Sample Review to test**
+
+```agsl
+Positive Reviews
+"I absolutely love this product! The quality is excellent, and it offers great value for money. Highly recommended!"
+"This is the best product I’ve ever purchased on Amazon. The features are exactly as described and exceeded my expectations."
+
+Negative Reviews
+"The packaging was damaged, and the product didn’t match the description. Very disappointed."
 ```
 
 ---
@@ -181,24 +188,9 @@ The application will be available at: `http://127.0.0.1:5000`.
 
 ---
 
-## **Contribution**
-1. Fork the repository.
-2. Create a new branch:
-   ```bash
-   git checkout -b feature-name
-   ```
-3. Commit changes:
-   ```bash
-   git commit -m 'Add feature'
-   ```
-4. Push to branch:
-   ```bash
-   git push origin feature-name
-   ```
-5. Submit a pull request.
-
----
-
 ## **Authors**
-Your Name -
+Team Member 1: **Pooja Shiwakoti** (912581587)
+- pooja.shiwakoti@uky.edu
 
+Team Member 2: **Kamal Ghimire** (12589739)
+- kamal.ghimire@uky.edu
