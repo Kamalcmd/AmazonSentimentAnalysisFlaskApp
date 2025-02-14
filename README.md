@@ -70,7 +70,7 @@ pip install -r requirements.txt
 ---
 
 ## **Dataset**
-The dataset (`Reviews.csv`) is located in the `data/` directory. It includes:
+The dataset (`Reviews.csv`) is located in the `data/` directory. The file size was heavy to push into git so it remains unpushed. You can use any Reviews.csv file that includes:
 - **Id**: Unique ID for each review.
 - **Text**: Review content (used for analysis).
 - **Score**: Rating (used to determine sentiment: positive if ≥3, negative otherwise).
