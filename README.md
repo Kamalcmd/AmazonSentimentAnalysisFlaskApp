@@ -189,8 +189,8 @@ Negative Reviews
 ---
 
 ## **Authors**
-Team Member 1: **Pooja Shiwakoti** (912581587)
-- pooja.shiwakoti@uky.edu
+Team Member 1: **Hunter Absire**
+- absire.hunter@uky.edu
 
-Team Member 2: **Kamal Ghimire** (12589739)
+Team Member 2: **Kamal Ghimire** 
 - kamal.ghimire@uky.edu
